@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Training Simulator — Edición Avanzada</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg: #f4f6f9;
+    --card: #ffffff;
+    --primary: #142b49;
+    --primary-mid: #1e3a8a;
+    --primary-light: #eff6ff;
+    --accent: #0d9488;
+    --accent-light: #f0fdfa;
+    --danger: #dc2626;
+    --danger-light: #fef2f2;
+    --warn: #d97706;
+    --warn-light: #fffbeb;
+    --text: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --radius: 14px;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #app {
+    width: 96%;
+    max-width: 1040px;
+    height: 93vh;
+    max-height: 720px;
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: 0 12px 35px rgba(15, 23, 42, 0.1);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Header */
+  header {
+    padding: 13px 24px;
+    background: linear-gradient(125deg, var(--primary), #24558a);
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .header-title {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+  }
+
+  .header-sub {
+    font-size: 0.75rem;
+    opacity: 0.85;
+  }
+
+  .hud {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    background: rgba(255, 255, 255, 0.16);
+    padding: 4px 11px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .badge.score {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  /* Screens */
+  .screen {
+    display: none;
+    flex: 1;
+    padding: 18px 26px;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow-y: auto;
+  }
+
+  .screen.active {
+    display: flex;
+  }
+
+  /* Typography & Layout */
+  h2 {
+    font-size: 1.18rem;
+    color: var(--primary);
+    margin-bottom: 4px;
+  }
+
+  p {
+    font-size: 0.86rem;
+    line-height: 1.45;
+    color: var(--text);
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin: 8px 0;
+  }
+
+  .box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+
+  .box.highlight {
+    background: var(--primary-light);
+    border-color: #bfdbfe;
+  }
+
+  .box.accent {
+    background: var(--accent-light);
+    border-color: #99f6e4;
+  }
+
+  .box.warn {
+    background: var(--warn-light);
+    border-color: #fde68a;
+  }
+
+  .box-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 5px;
+    color: var(--primary);
+  }
+
+  .box.warn .box-title { color: var(--warn); }
+  .box.accent .box-title { color: var(--accent); }
+
+  /* Form & Buttons */
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    max-width: 460px;
+    margin: 6px auto;
+    width: 100%;
+  }
+
+  input[type="text"], select {
+    padding: 9px 13px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.88rem;
+    outline: none;
+    background: #fff;
+    transition: border-color 0.2s;
+  }
+
+  input[type="text"]:focus, select:focus {
+    border-color: var(--primary);
+  }
+
+  input[type="file"] {
+    font-size: 0.78rem;
+  }
+
+  .btn {
+    padding: 9px 18px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .btn:hover:not(:disabled) {
+    opacity: 0.92;
+    transform: translateY(-1px);
+  }
+
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .btn-sm { padding: 6px 12px; font-size: 0.78rem; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-accent { background: var(--accent); color: #fff; }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-outline { background: #fff; border: 1.5px solid var(--border); color: var(--text); }
+
+  .footer-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+    gap: 10px;
+  }
+
+  /* Simulator Items */
+  .req-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    gap: 10px;
+  }
+
+  .req-text {
+    font-size: 0.81rem;
+    flex: 1;
+  }
+
+  .req-controls {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .pill-btn {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .pill-btn.selected-ok { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .pill-btn.selected-fix { background: var(--warn); color: #fff; border-color: var(--warn); }
+
+  /* Trivia Options */
+  .options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 6px 0;
+  }
+
+  .option-btn {
+    text-align: left;
+    padding: 9px 13px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    font-size: 0.83rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .option-btn:hover:not(:disabled) {
+    border-color: var(--primary);
+    background: var(--primary-light);
+  }
+
+  .option-btn.selected {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    font-weight: 600;
+  }
+
+  .option-btn.correct {
+    border-color: var(--accent);
+    background: var(--accent-light);
+    color: #065f46;
+    font-weight: 600;
+  }
+
+  .option-btn.wrong {
+    border-color: var(--danger);
+    background: var(--danger-light);
+    color: #991b1b;
+  }
+
+  .match-row {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 0.81rem;
+  }
+
+  .feedback-banner {
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    line-height: 1.35;
+    display: none;
+    margin-top: 4px;
+  }
+
+  .feedback-banner.show { display: block; }
+  .feedback-banner.ok { background: var(--accent-light); border: 1px solid #5eead4; color: #064e3b; }
+  .feedback-banner.err { background: var(--danger-light); border: 1px solid #fca5a5; color: #7f1d1d; }
+
+  /* Data Table & Ranking */
+  .mini-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.76rem;
+  }
+
+  .mini-table th, .mini-table td {
+    text-align: left;
+    padding: 5px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .mini-table th {
+    background: var(--bg);
+    color: var(--muted);
+    font-weight: 700;
+  }
+
+  .profile-card {
+    background: linear-gradient(135deg, var(--primary) 0%, #1e40af 100%);
+    color: #fff;
+    padding: 13px 18px;
+    border-radius: 12px;
+  }
+
+  /* Anti-cheat Overlay */
+  #cheat-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.96);
+    color: #fff;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 30px;
+    z-index: 100;
+  }
+
+  #cheat-overlay.active { display: flex; }
+
+  /* Modal Ranking */
+  #ranking-modal {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.65);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 90;
+  }
+
+  #ranking-modal.active { display: flex; }
+
+  .modal-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 20px;
+    width: 100%;
+    max-width: 640px;
+    max-height: 82vh;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  @media (max-width: 740px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    #app { height: 97vh; max-height: none; }
+    .screen { padding: 14px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- Header -->
+  <header>
+    <div>
+      <div class="header-title">CRM Training Simulator</div>
+      <div class="header-sub">Gestión de Clientes, Análisis de Datos y Toma de Decisiones</div>
+    </div>
+    <div class="hud">
+      <button class="btn btn-sm btn-outline" style="background:rgba(255,255,255,0.14); color:#fff; border-color:rgba(255,255,255,0.3);" onclick="toggleRanking(true)">🏆 Ranking</button>
+      <span class="badge" id="hud-role" style="display:none;">Rol</span>
+      <span class="badge score" id="hud-score" style="display:none;">0 / 6 pts</span>
+    </div>
+  </header>
+
+  <!-- SCREEN 0: INICIO -->
+  <section class="screen active" id="screen-start">
+    <div style="text-align:center; margin-top: 4px;">
+      <h2>Simulador Ejecutivo de Gestión CRM</h2>
+      <p style="max-width:680px; margin: 4px auto; color:var(--muted);">
+        Ingresa tu nombre para recibir un <strong>rol estratégico</strong> y un <strong>escenario empresarial</strong>. Auditarás decisiones de servicio, analizarás métricas de clientes y resolverás 6 retos seleccionados de un banco de <strong>100 preguntas reales de CRM</strong>.
+      </p>
+    </div>
+
+    <div class="input-group">
+      <label for="student-name" style="font-size:0.82rem; font-weight:700;">Nombre completo del participante:</label>
+      <input type="text" id="student-name" placeholder="Ej. Alejandro Restrepo" autocomplete="off">
+      <button class="btn btn-primary" onclick="startSimulation()">▶ Comenzar Misión CRM</button>
+    </div>
+
+    <div class="grid-2" style="max-width:740px; margin: 0 auto; width:100%;">
+      <div class="box highlight">
+        <div class="box-title">📊 Competencias Evaluadas</div>
+        <p style="font-size:0.79rem;">
+          • <strong>Operación y Servicio:</strong> Manejo de reclamos, SLA y omnicanalidad.<br>
+          • <strong>Analítica CRM:</strong> Retención, Churn, NPS, CLV y calidad de datos.<br>
+          • <strong>Estrategia Comercial:</strong> Embudo de ventas, segmentación y gobierno.
+        </p>
+      </div>
+      <div class="box warn">
+        <div class="box-title">⚠️ Protocolo de Evaluación Activo</div>
+        <p style="font-size:0.79rem;">
+          Al iniciar se activará el <strong>control de integridad</strong>. Si cambias de pestaña, minimizas el navegador o sales de esta ventana antes de finalizar, <strong>la simulación será anulada automáticamente</strong>.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 1: CONTEXTO DEL ESCENARIO Y ROL -->
+  <section class="screen" id="screen-context">
+    <div>
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+        <h2 id="ctx-scenario-title">Escenario Asignado</h2>
+        <span class="badge" style="background:var(--primary-light); color:var(--primary);">Fase 1 de 3: Diagnóstico y Rol</span>
+      </div>
+      <p id="ctx-scenario-desc" style="margin-top:4px;"></p>
+    </div>
+
+    <div class="grid-2">
+      <div class="box highlight">
+        <div class="box-title">👤 Tu Rol Asignado: <span id="ctx-role-name"></span></div>
+        <p id="ctx-role-mission" style="font-size:0.82rem;"></p>
+      </div>
+      <div class="box accent">
+        <div class="box-title">🎯 Objetivo Crítico del Negocio</div>
+        <p id="ctx-client-need" style="font-size:0.82rem;"></p>
+      </div>
+    </div>
+
+    <div class="box">
+      <div class="box-title">📐 Pilares de Decisión CRM</div>
+      <p style="font-size:0.81rem;">
+        Toda decisión debe respaldarse en: <strong>1) Calidad y privacidad del dato</strong> (sin duplicados y con consentimiento), <strong>2) Continuidad omnicanal</strong> (historial unificado), <strong>3) Medición por KPIs</strong> (retención, CSAT, conversión) y <strong>4) Acciones preventivas</strong>.
+      </p>
+    </div>
+
+    <div class="footer-bar">
+      <span style="font-size:0.78rem; color:var(--muted);">Analiza tu misión y pasa al laboratorio operativo.</span>
+      <button class="btn btn-primary" onclick="goToScreen('screen-sim')">Ir al Laboratorio CRM →</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 2: TALLER PRÁCTICO + EXPLORADOR DE CLIENTES -->
+  <section class="screen" id="screen-sim">
+    <div>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>Laboratorio CRM: Auditoría Operativa y Base de Clientes</h2>
+        <span class="badge" style="background:var(--primary-light); color:var(--primary);">Fase 2 de 3: Práctica</span>
+      </div>
+      <p style="font-size:0.8rem; color:var(--muted);">
+        Audita las 3 acciones registradas en el CRM de tu empresa (<strong>Aprobar</strong> si cumple buenas prácticas o <strong>Corregir</strong> si viola políticas/datos) y revisa la muestra de clientes.
+      </p>
+    </div>
+
+    <div class="grid-2" style="align-items:start; margin:4px 0;">
+      <!-- Columna izquierda: Auditoría de casos CRM -->
+      <div>
+        <div id="sim-items-container"></div>
+        <div id="sim-feedback" class="feedback-banner"></div>
+      </div>
+
+      <!-- Columna derecha: Explorador de Datos de Clientes (del Prototipo 1) -->
+      <div class="box" style="padding:10px 12px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <div class="box-title" style="margin:0;">📂 Base de Clientes (<span id="client-count-lbl">0</span>)</div>
+          <div style="display:flex; gap:5px;">
+            <button class="btn btn-sm btn-outline" onclick="generateSampleCustomers(25)">↻ Generar Muestra</button>
+            <label class="btn btn-sm btn-outline" style="cursor:pointer; margin:0;">
+              📥 CSV/XLSX
+              <input type="file" id="file-import" accept=".csv,.xlsx,.xls,.txt" style="display:none;" onchange="handleFileImport(event)">
+            </label>
+          </div>
+        </div>
+        <div id="data-summary-pills" style="display:flex; gap:6px; margin-bottom:6px; font-size:0.74rem;"></div>
+        <div style="max-height:135px; overflow-y:auto; border:1px solid var(--border); border-radius:6px; background:#fff;">
+          <table class="mini-table">
+            <thead><tr><th>ID</th><th>Edad</th><th>Compras</th><th>Satisfacción</th></tr></thead>
+            <tbody id="data-rows"></tbody>
+          </table>
+        </div>
+        <div id="import-status" style="font-size:0.72rem; color:var(--muted); margin-top:4px;">Datos ficticios cargados para análisis de contexto.</div>
+      </div>
+    </div>
+
+    <div class="footer-bar">
+      <button class="btn btn-accent" id="btn-verify-sim" onclick="verifySimulation()">Verificar Auditoría CRM</button>
+      <button class="btn btn-primary" id="btn-next-trivia" onclick="startTrivia()" disabled>Continuar a Retos de Evaluación (6) →</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 3: TRIVIA GAMIFICADA (6 RETOS DEL BANCO + DINÁMICAS VARIADAS) -->
+  <section class="screen" id="screen-trivia">
+    <div>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2 id="q-header">Reto 1 de 6</h2>
+        <span class="badge" style="background:var(--primary-light); color:var(--primary);" id="q-type-badge">Categoría</span>
+      </div>
+      <p id="q-prompt" style="font-weight:600; margin-top:6px; font-size:0.9rem;"></p>
+    </div>
+
+    <div id="q-body" style="flex:1; display:flex; flex-direction:column; justify-content:center; overflow-y:auto;"></div>
+
+    <div id="q-feedback" class="feedback-banner"></div>
+
+    <div class="footer-bar">
+      <button class="btn btn-primary" id="btn-submit-q" onclick="submitAnswer()">Validar Respuesta</button>
+      <button class="btn btn-accent" id="btn-next-q" onclick="nextQuestion()" style="display:none;">Siguiente Reto →</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 4: RESULTADOS FINALES Y DIAGNÓSTICO -->
+  <section class="screen" id="screen-end">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <h2>Acta de Cierre y Diagnóstico Ejecutivo CRM</h2>
+        <p style="font-size:0.8rem; color:var(--muted);">Evaluación completada bajo protocolo de integridad.</p>
+      </div>
+      <button class="btn btn-sm btn-outline" onclick="toggleRanking(true)">🏆 Ver Tabla de Clasificación</button>
+    </div>
+
+    <div class="grid-2" style="margin:4px 0;">
+      <div class="box">
+        <div class="box-title">📋 Ficha del Evaluado</div>
+        <p style="font-size:0.81rem;"><strong>Participante:</strong> <span id="end-name"></span></p>
+        <p style="font-size:0.81rem;"><strong>Rol:</strong> <span id="end-role"></span></p>
+        <p style="font-size:0.81rem;"><strong>Escenario:</strong> <span id="end-scenario"></span></p>
+        <p style="font-size:0.81rem;"><strong>Clientes en base:</strong> <span id="end-clients"></span> registros</p>
+      </div>
+      <div class="box accent" style="display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;">
+        <div class="box-title">Puntuación Final Obtenida</div>
+        <div style="font-size:2rem; font-weight:800; color:var(--primary);" id="end-score">0 / 6</div>
+        <div style="font-size:0.8rem; font-weight:700; color:var(--accent);" id="end-percent">0% · Nivel</div>
+      </div>
+    </div>
+
+    <div class="profile-card">
+      <div style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.6px; opacity:0.85;">Perfil Profesional Diagnosticado</div>
+      <div style="font-size:1.1rem; font-weight:700; margin:2px 0;" id="end-profile-title"></div>
+      <p style="font-size:0.81rem; color:#f1f5f9;" id="end-profile-desc"></p>
+    </div>
+
+    <div class="footer-bar">
+      <span style="font-size:0.76rem; color:var(--muted);">Tu resultado ha sido guardado en la clasificación local de este navegador.</span>
+      <button class="btn btn-primary" onclick="resetAll()">Iniciar Nuevo Escenario</button>
+    </div>
+  </section>
+
+  <!-- MODAL RANKING -->
+  <div id="ranking-modal">
+    <div class="modal-card">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2 style="margin:0;">🏆 Tabla de Clasificación CRM</h2>
+        <button class="btn btn-sm btn-outline" onclick="toggleRanking(false)">✕ Cerrar</button>
+      </div>
+      <div style="overflow-y:auto; flex:1; border:1px solid var(--border); border-radius:8px;">
+        <table class="mini-table">
+          <thead><tr><th>#</th><th>Participante</th><th>Rol</th><th>Puntaje</th><th>Nivel CRM</th><th>Fecha</th></tr></thead>
+          <tbody id="leaderboard-rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANTI-CHEAT OVERLAY -->
+  <div id="cheat-overlay">
+    <div style="font-size:2.6rem; margin-bottom:10px;">🚫</div>
+    <h2 style="color:#fca5a5; font-size:1.35rem; margin-bottom:8px;">Simulación anulada por abandono de ventana</h2>
+    <p style="color:#e2e8f0; max-width:500px; margin-bottom:20px;">
+      Se detectó un cambio de pestaña, minimización o pérdida de foco mientras la evaluación CRM estaba activa. Por seguridad académica, tu intento fue invalidado.
+    </p>
+    <button class="btn btn-danger" onclick="resetAll()">Reiniciar Simulación desde Cero</button>
+  </div>
+</div>
+
+<script>
+  const LEADERBOARD_KEY = 'crmTrainingLeaderboardV2';
+
+  const ROLES = [
+    {
+      name: "Gerente de Operaciones CRM",
+      mission: "Garantizar la continuidad omnicanal, el cumplimiento de acuerdos de nivel de servicio (SLA) y la depuración constante de registros duplicados."
+    },
+    {
+      name: "Analista de Inteligencia y Fidelización",
+      mission: "Transformar el historial transaccional y las encuestas (NPS/CSAT) en acciones concretas para reducir la tasa de abandono (Churn)."
+    },
+    {
+      name: "Líder de Gobierno de Datos y Calidad",
+      mission: "Asegurar que cada interacción comercial respete la privacidad, el consentimiento informado, la trazabilidad y los permisos por rol."
+    }
+  ];
+
+  const SCENARIOS = [
+    {
+      title: "Retail Omnicanal 'MercadoVivo'",
+      desc: "Una cadena comercial con tiendas físicas y comercio electrónico presenta aumento de reclamos por entregas tardías y registros duplicados entre su web y call center.",
+      need: "Reducir la tasa de abandono trimestral del 18% al 10% unificando el historial de compras y priorizando casos urgentes.",
+      simItems: [
+        {
+          id: "c1",
+          text: "Caso #101: Un asesor unifica dos perfiles duplicados del mismo cliente tras verificar su documento e historial de compras.",
+          valid: true,
+          reason: "Correcto: depurar y unificar duplicados evita visión fragmentada y mejora la calidad de datos."
+        },
+        {
+          id: "c2",
+          text: "Caso #102: Para bajar la cola de 45 reclamos pendientes, el equipo cierra automáticamente los casos con más de 5 días sin responder.",
+          valid: false,
+          reason: "Práctica indebida: los casos deben priorizarse por urgencia, impacto y tiempo de espera, nunca cerrarse sin solución."
+        },
+        {
+          id: "c3",
+          text: "Caso #103: Marketing exporta toda la base de teléfonos a una carpeta pública sin verificar autorización de tratamiento de datos.",
+          valid: false,
+          reason: "Violación de privacidad: toda exportación requiere autorización, finalidad legítima y controles de acceso."
+        }
+      ],
+      specialQuestions: [
+        {
+          type: "Selección Múltiple (Varias Respuestas)",
+          kind: "multi",
+          prompt: "Selecciona las DOS acciones más efectivas para recuperar la confianza de los clientes frecuentes de MercadoVivo cuya satisfacción cayó:",
+          options: [
+            "Analizar las causas raíz de las entregas tardías y ajustar tiempos logísticos",
+            "Ocultar las encuestas negativas del tablero directivo",
+            "Implementar seguimiento posventa proactivo con vista 360 del historial",
+            "Aumentar los precios para compensar los reclamos"
+          ],
+          answer: [0, 2],
+          rationale: "El análisis de causa raíz y el seguimiento contextualizado permiten resolver el problema real y mejorar la experiencia."
+        },
+        {
+          type: "Emparejamiento Técnico",
+          kind: "match",
+          prompt: "Relaciona cada indicador clave de MercadoVivo con lo que mide en la operación CRM:",
+          pairs: [
+            { left: "Porcentaje de clientes que dejan de comprar en el trimestre", right: "Tasa de Churn" },
+            { left: "Disposición declarada del cliente a recomendar la marca", right: "NPS" },
+            { left: "Casos resueltos en la primera interacción sin escalamiento", right: "FCR (Primer Contacto)" }
+          ],
+          choices: ["NPS", "FCR (Primer Contacto)", "Tasa de Churn"],
+          rationale: "Dominar la definición exacta de cada KPI evita interpretaciones erróneas en los comités gerenciales."
+        }
+      ]
+    },
+    {
+      title: "Banca Digital y Servicios 'CrediÁgil'",
+      desc: "Una entidad financiera digital busca optimizar su embudo de conversión de créditos y proteger los datos sensibles de sus usuarios frente a accesos no autorizados.",
+      need: "Elevar la conversión de prospectos cotizados del 14% al 22% asegurando trazabilidad total y cumplimiento normativo.",
+      simItems: [
+        {
+          id: "b1",
+          text: "Caso #201: Un asesor marca como 'Venta Ganada' todas las solicitudes enviadas por correo aunque el cliente aún no ha firmado.",
+          valid: false,
+          reason: "Error de proceso: una oportunidad solo se marca como ganada cuando existe confirmación válida del cierre."
+        },
+        {
+          id: "b2",
+          text: "Caso #202: Se configura una regla automatizada que alerta al asesor cuando una cotización lleva 48 horas sin seguimiento.",
+          valid: true,
+          reason: "Correcto: la automatización de alertas evita que se enfríen oportunidades activas en el embudo."
+        },
+        {
+          id: "b3",
+          text: "Caso #203: Todo el equipo de soporte comparte un único usuario administrador para agilizar la consulta de saldos.",
+          valid: false,
+          reason: "Riesgo grave de seguridad: viola el principio de mínimo privilegio y destruye la trazabilidad de auditoría."
+        }
+      ],
+      specialQuestions: [
+        {
+          type: "Selección Múltiple (Varias Respuestas)",
+          kind: "multi",
+          prompt: "Selecciona DOS controles indispensables de seguridad y gobierno de datos que debe aplicar CrediÁgil en su CRM:",
+          options: [
+            "Autenticación multifactor (MFA) y cuentas individuales con permisos por rol",
+            "Permitir que cualquier área descargue datos sensibles sin registro",
+            "Bitácora de trazabilidad que registre quién modificó cada dato y cuándo",
+            "Guardar copias de seguridad únicamente en el computador de un asesor"
+          ],
+          answer: [0, 2],
+          rationale: "MFA, permisos granulares y auditoría de cambios protegen la integridad y confidencialidad de los clientes."
+        },
+        {
+          type: "Emparejamiento Técnico",
+          kind: "match",
+          prompt: "Asocia cada estrategia comercial de CrediÁgil con su aplicación correcta:",
+          pairs: [
+            { left: "Ofrecer seguro de vida complementario al aprobar un crédito", right: "Venta Cruzada" },
+            { left: "Proponer una tarjeta de categoría superior por buen historial", right: "Upselling" },
+            { left: "Agrupar usuarios según recencia, frecuencia y monto", right: "Segmentación RFM" }
+          ],
+          choices: ["Segmentación RFM", "Venta Cruzada", "Upselling"],
+          rationale: "Diferenciar entre venta cruzada, upselling y segmentación RFM permite diseñar campañas pertinentes."
+        }
+      ]
+    },
+    {
+      title: "SaaS Empresarial B2B 'NubeGestor'",
+      desc: "Una empresa de software en la nube atraviesa una migración de plataforma CRM y necesita capacitar a sus ejecutivos para evitar pérdida de información y baja adopción.",
+      need: "Lograr un 95% de adopción interna del nuevo CRM en 60 días y mantener el costo de adquisición (CAC) bajo control.",
+      simItems: [
+        {
+          id: "n1",
+          text: "Caso #301: Antes de migrar la base histórica, el equipo depura registros, mapea campos, respalda y ejecuta pruebas piloto.",
+          valid: true,
+          reason: "Correcto: toda migración requiere limpieza previa, respaldo y pruebas de validación."
+        },
+        {
+          id: "n2",
+          text: "Caso #302: Un ejecutivo promete un descuento del 40% sin autorización ni registro en el sistema para cerrar rápido el mes.",
+          valid: false,
+          reason: "Falta de ética y control: las condiciones comerciales deben ser transparentes y seguir las políticas aprobadas."
+        },
+        {
+          id: "n3",
+          text: "Caso #303: El chatbot transfiere automáticamente a un agente humano cuando detecta frustración o un fallo crítico de servidor.",
+          valid: true,
+          reason: "Correcto: los casos complejos o sensibles deben escalarse oportunamente a atención humana."
+        }
+      ],
+      specialQuestions: [
+        {
+          type: "Selección Múltiple (Varias Respuestas)",
+          kind: "multi",
+          prompt: "Selecciona DOS factores clave para garantizar una alta adopción del nuevo CRM entre los colaboradores de NubeGestor:",
+          options: [
+            "Capacitación práctica basada en procesos reales y acompañamiento continuo",
+            "Eliminar los manuales para que cada usuario descubra el sistema por ensayo y error",
+            "Definir campos obligatorios claros y flujos que reduzcan tareas manuales repetitivas",
+            "Mantener dos sistemas paralelos sin conciliación de datos"
+          ],
+          answer: [0, 2],
+          rationale: "La capacitación contextual y la simplificación operativa son los mayores impulsores de adopción tecnológica."
+        },
+        {
+          type: "Emparejamiento Técnico",
+          kind: "match",
+          prompt: "Relaciona cada herramienta de gestión CRM con su propósito principal:",
+          pairs: [
+            { left: "Define quién ejecuta, aprueba, consulta e informa una tarea", right: "Matriz RACI" },
+            { left: "Valida que el software cumpla el proceso real del usuario", right: "Pruebas UAT" },
+            { left: "Estima el valor económico total de un cliente en el tiempo", right: "CLV" }
+          ],
+          choices: ["CLV", "Matriz RACI", "Pruebas UAT"],
+          rationale: "La claridad de roles (RACI), validación funcional (UAT) y visión financiera (CLV) sostienen una gestión madura."
+        }
+      ]
+    }
+  ];
+
+  // Banco completo de 100 preguntas de CRM (del Prototipo 1)
+  const BANK_100 = [
+    {cat:'Atención al cliente',q:'Un cliente informa que recibió un producto diferente al que compró. ¿Qué debe hacerse primero?',o:['Cerrar el caso para evitar retrasos','Escuchar, verificar el pedido y registrar el reclamo','Decirle que vuelva a comprar','Eliminar sus datos del sistema'],a:1,why:'Primero se escucha al cliente, se verifica la información y se registra el caso para darle seguimiento.'},
+    {cat:'Registro de clientes',q:'Dos registros parecen pertenecer al mismo cliente. ¿Cuál es la mejor acción?',o:['Crear un tercer registro','Borrar ambos registros','Verificar los datos y unificar duplicados siguiendo el procedimiento','Ignorar la duplicidad'],a:2,why:'La depuración evita información repetida y mejora la calidad de la base de datos.'},
+    {cat:'Ventas',q:'Un equipo quiere aumentar las ventas. ¿Qué información CRM conviene revisar?',o:['Solo los colores del sitio web','Historial de compras, necesidades y oportunidades de los clientes','La edad del gerente','Únicamente el número de empleados'],a:1,why:'El historial y las necesidades permiten identificar oportunidades relevantes para cada cliente.'},
+    {cat:'Fidelización',q:'La tasa de recompra disminuyó durante tres meses. ¿Qué decisión es más adecuada?',o:['Analizar motivos de abandono y opiniones de clientes','Aumentar todos los precios','Dejar de medir las compras','Eliminar a los clientes inactivos'],a:0,why:'El análisis de causas permite diseñar acciones de retención basadas en evidencia.'},
+    {cat:'Análisis de datos',q:'El reporte muestra muchas quejas relacionadas con entregas tardías. ¿Qué debería hacer el responsable?',o:['Ocultar el reporte','Cambiar las quejas por ventas','Analizar tiempos y causas para proponer mejoras logísticas','Desactivar el registro de reclamos'],a:2,why:'Los datos deben convertirse en acciones concretas para corregir el problema.'},
+    {cat:'Gestión de reclamos',q:'Hay 40 solicitudes pendientes y algunas llevan varios días sin respuesta. ¿Cómo priorizarlas?',o:['Atenderlas en orden aleatorio','Clasificarlas por urgencia, impacto y tiempo de espera','Cerrar todas automáticamente','Atender solo las más recientes'],a:1,why:'La priorización transparente ayuda a atender primero los casos urgentes y atrasados.'},
+    {cat:'Supervisión',q:'Un asesor tiene baja satisfacción en sus encuestas. ¿Qué debe hacer su supervisor?',o:['Revisar casos, conversar y establecer un plan de mejora','Despedirlo sin revisar información','Eliminar las encuestas','Ignorar el indicador'],a:0,why:'La supervisión debe apoyarse en evidencias, retroalimentación y seguimiento.'},
+    {cat:'Toma de decisiones',q:'La dirección debe decidir si invertir en un nuevo canal de atención. ¿Qué necesita?',o:['Elegir por intuición solamente','Revisar costos, demanda, satisfacción y resultados esperados','Copiar a otra empresa sin analizar','Evitar consultar a los clientes'],a:1,why:'Una decisión administrativa debe considerar indicadores, costos y necesidades reales.'},
+    {cat:'Privacidad',q:'Un empleado solicita exportar toda la base de clientes a su correo personal. ¿Qué corresponde?',o:['Enviar el archivo sin preguntar','Compartirlo en redes','Verificar autorización, finalidad y políticas de protección de datos','Publicar la base para todo el equipo'],a:2,why:'La información de clientes debe tratarse con autorización, finalidad legítima y controles de acceso.'},
+    {cat:'Indicadores',q:'¿Qué indicador ayuda a conocer qué proporción de clientes continúa comprando?',o:['Tasa de retención','Tamaño del monitor','Cantidad de computadores','Número de contraseñas'],a:0,why:'La retención mide la capacidad de mantener clientes durante un periodo.'},
+    {cat:'Estrategia CRM',q:'Un segmento de clientes compra con frecuencia, pero tiene bajo nivel de satisfacción. ¿Qué conviene hacer?',o:['Ignorar su opinión','Investigar sus problemas y mejorar su experiencia','Eliminar el segmento','Dejar de ofrecer soporte'],a:1,why:'La frecuencia de compra no reemplaza la necesidad de cuidar la experiencia del cliente.'},
+    {cat:'Calidad de información',q:'¿Por qué es importante actualizar los datos de contacto?',o:['Para llenar espacio','Para mejorar la comunicación y evitar errores de seguimiento','Para aumentar el tamaño del archivo','No tiene ninguna utilidad'],a:1,why:'Los datos actualizados facilitan comunicaciones pertinentes y seguimiento efectivo.'},
+    {cat:'Segmentación',q:'Una tienda quiere enviar ofertas distintas según los intereses de sus compradores. ¿Qué debe hacer?',o:['Enviar el mismo mensaje a todos','Agrupar clientes por características y comportamiento','Eliminar el historial de compras','Contactar solo a clientes nuevos'],a:1,why:'La segmentación organiza clientes con características o necesidades similares para personalizar acciones.'},
+    {cat:'Embudo de ventas',q:'¿Para qué sirve el embudo de ventas en un CRM?',o:['Para visualizar las etapas desde el contacto hasta el cierre','Para calcular la edad de los asesores','Para almacenar contraseñas','Para reemplazar el servicio posventa'],a:0,why:'El embudo permite observar el avance de oportunidades por cada etapa comercial.'},
+    {cat:'Oportunidades',q:'Un prospecto pidió una cotización y aún no responde. ¿Qué acción corresponde?',o:['Marcarlo como venta cerrada','Eliminar el contacto','Programar un seguimiento oportuno y registrar la interacción','Enviar mensajes repetidos cada hora'],a:2,why:'El seguimiento documentado mantiene activa la oportunidad sin hostigar al prospecto.'},
+    {cat:'Prospectos',q:'¿Qué es un prospecto en un proceso comercial?',o:['Un cliente que presentó una queja','Una persona o empresa que podría estar interesada en la oferta','Un empleado del área contable','Un proveedor ya contratado'],a:1,why:'Un prospecto es un posible cliente que puede convertirse en comprador.'},
+    {cat:'Historial del cliente',q:'Antes de responder una consulta, ¿qué aporta revisar el historial del cliente?',o:['Permite conocer interacciones previas y evitar pedir información repetida','Permite cambiar el precio sin autorización','Elimina la necesidad de escuchar','Muestra datos de todos los empleados'],a:0,why:'El historial aporta contexto sobre compras, solicitudes y conversaciones anteriores.'},
+    {cat:'Servicio posventa',q:'Un cliente informa un problema después de recibir su compra. ¿Qué proceso debe activarse?',o:['Prospección','Servicio posventa y seguimiento del caso','Campaña de captación','Cierre de oportunidad'],a:1,why:'El servicio posventa atiende necesidades que aparecen después de la compra.'},
+    {cat:'Experiencia del cliente',q:'¿Qué significa mejorar la experiencia del cliente?',o:['Reducir todos los canales de contacto','Hacer más sencillo y satisfactorio el recorrido de interacción con la empresa','Evitar recibir comentarios','Aumentar formularios innecesarios'],a:1,why:'La experiencia comprende las percepciones del cliente en sus interacciones con la empresa.'},
+    {cat:'Satisfacción',q:'Una encuesta registra una caída en satisfacción. ¿Cuál es el primer paso analítico?',o:['Cambiar los resultados','Revisar respuestas, periodos y motivos frecuentes','Ocultar las encuestas','Asumir que todos los clientes están inconformes'],a:1,why:'Primero se valida y analiza la evidencia para identificar patrones y causas.'},
+    {cat:'NPS',q:'¿Qué busca medir principalmente el indicador NPS?',o:['La disposición de los clientes a recomendar la empresa','El número de productos en bodega','El costo de nómina','La velocidad del computador'],a:0,why:'El Net Promoter Score mide la disposición declarada a recomendar una empresa o servicio.'},
+    {cat:'Tasa de conversión',q:'De 100 prospectos, 20 compraron. ¿Cuál fue la conversión?',o:['2%','20%','50%','80%'],a:1,why:'La conversión es 20 ventas divididas entre 100 prospectos, equivalente al 20%.'},
+    {cat:'Retención',q:'Al iniciar el mes había 200 clientes; se conservaron 180, sin contar nuevos. ¿Cuál es la retención?',o:['10%','80%','90%','180%'],a:2,why:'La retención es 180 dividido entre 200, equivalente al 90%.'},
+    {cat:'Churn',q:'¿Qué representa la tasa de abandono o churn?',o:['La proporción de clientes que dejan de serlo en un periodo','El total de nuevos prospectos','La cantidad de llamadas realizadas','El valor promedio de una compra'],a:0,why:'Churn mide la pérdida de clientes durante un periodo definido.'},
+    {cat:'Ticket promedio',q:'Una empresa vendió $2.000.000 en 40 compras. ¿Cuál es el valor promedio por compra?',o:['$20.000','$40.000','$50.000','$80.000'],a:2,why:'El ticket promedio es 2.000.000 dividido entre 40: $50.000.'},
+    {cat:'Calidad de datos',q:'¿Qué problema genera guardar teléfonos con formatos diferentes y errores?',o:['Facilita la segmentación','Dificulta la búsqueda y el contacto','Mejora la exactitud','Aumenta la satisfacción automáticamente'],a:1,why:'Los formatos inconsistentes y errores dificultan localizar y contactar a los clientes.'},
+    {cat:'Datos duplicados',q:'¿Qué riesgo producen los registros duplicados?',o:['Una visión fragmentada del cliente y comunicaciones repetidas','Mayor seguridad por duplicación','Menos almacenamiento','Mejores indicadores garantizados'],a:0,why:'Los duplicados fragmentan el historial y pueden ocasionar contactos repetidos.'},
+    {cat:'Campos obligatorios',q:'¿Por qué se definen campos obligatorios en un formulario CRM?',o:['Para impedir cualquier registro','Para asegurar que se capture la información mínima necesaria','Para pedir datos sensibles sin motivo','Para aumentar el tiempo de atención'],a:1,why:'Los campos obligatorios ayudan a mantener la integridad de los datos esenciales.'},
+    {cat:'Validación',q:'¿Qué debe comprobar un formulario antes de guardar un correo electrónico?',o:['Que tenga una estructura válida','Que contenga exactamente diez números','Que coincida con la contraseña','Que esté escrito en mayúsculas'],a:0,why:'La validación de formato reduce errores de captura.'},
+    {cat:'Consentimiento',q:'Antes de usar datos personales para campañas, ¿qué debe verificar la empresa?',o:['Que cualquier empleado lo autorice','La autorización y la finalidad permitida para el tratamiento','Que el archivo sea grande','Que el cliente haya comprado hace años'],a:1,why:'El uso de datos personales debe respetar la autorización, finalidad y normativa aplicable.'},
+    {cat:'Acceso por roles',q:'¿Qué principio aplica al asignar permisos en un CRM?',o:['Todos pueden ver y editar todo','Dar a cada usuario solo los permisos necesarios para su función','Compartir una cuenta general','Desactivar los registros de actividad'],a:1,why:'El principio de mínimo privilegio limita accesos a lo necesario para el trabajo.'},
+    {cat:'Trazabilidad',q:'¿Para qué sirve registrar quién modificó un dato y cuándo?',o:['Para auditar cambios y conocer su origen','Para aumentar las ventas directamente','Para ocultar errores','Para evitar copias de seguridad'],a:0,why:'La trazabilidad permite revisar el historial de cambios y apoyar auditorías.'},
+    {cat:'Respaldo',q:'¿Qué práctica ayuda a recuperar información ante una pérdida de datos?',o:['Guardar una única copia en el mismo equipo','Realizar copias de seguridad y comprobar su restauración','Compartir claves por chat','Borrar registros antiguos sin política'],a:1,why:'Los respaldos probados permiten recuperar información ante incidentes.'},
+    {cat:'Integración',q:'¿Qué beneficio ofrece integrar el CRM con el sistema de facturación?',o:['Duplicar manualmente cada cliente','Relacionar información comercial y transaccional con menos reprocesos','Eliminar los controles financieros','Impedir consultar ventas'],a:1,why:'La integración reduce tareas repetidas y facilita una visión más completa del cliente.'},
+    {cat:'Automatización',q:'Una tarea de seguimiento debe ejecutarse después de cada compra. ¿Qué función puede ayudar?',o:['Una regla o flujo automatizado','Una hoja en blanco','Eliminar las notificaciones','Un cambio manual de contraseña'],a:0,why:'Las automatizaciones ejecutan acciones definidas cuando se cumple una condición.'},
+    {cat:'Alertas',q:'¿Cuándo es útil configurar una alerta en CRM?',o:['Cuando una oportunidad está próxima a vencer','Cada vez que se enciende el monitor','Para reemplazar todas las reuniones','Para borrar los reclamos'],a:0,why:'Las alertas recuerdan eventos que requieren atención, como fechas límite.'},
+    {cat:'Campañas',q:'¿Qué dato permite evaluar si una campaña generó resultados comerciales?',o:['La tasa de conversión atribuible a la campaña','El color del teclado','La cantidad de carpetas del equipo','La hora de encendido del servidor'],a:0,why:'La conversión relaciona las respuestas o compras con los contactos de la campaña.'},
+    {cat:'Prueba A/B',q:'¿Para qué se utiliza una prueba A/B en una campaña?',o:['Comparar dos versiones para identificar cuál funciona mejor','Enviar dos facturas al mismo cliente','Duplicar todos los contactos','Evitar medir resultados'],a:0,why:'Una prueba A/B compara variantes bajo condiciones definidas para evaluar su desempeño.'},
+    {cat:'Personalización',q:'¿Qué permite personalizar una comunicación comercial?',o:['Usar preferencias e interacciones relevantes del cliente','Enviar datos de otros clientes','Ignorar el consentimiento','Repetir siempre el mismo mensaje'],a:0,why:'La personalización utiliza información pertinente para adaptar el mensaje a las necesidades del cliente.'},
+    {cat:'Omnicanalidad',q:'¿Qué caracteriza una estrategia omnicanal?',o:['Canales desconectados entre sí','Experiencia coherente y conectada entre los canales disponibles','Atención exclusiva por teléfono','Uso obligatorio de un solo canal'],a:1,why:'La omnicanalidad busca continuidad y consistencia entre los canales.'},
+    {cat:'Tiempo de respuesta',q:'¿Qué indicador muestra cuánto tarda en promedio el equipo en responder?',o:['Tiempo medio de primera respuesta','Tasa de recompra','Ticket promedio','Margen bruto'],a:0,why:'El tiempo medio de primera respuesta mide la demora hasta la primera contestación.'},
+    {cat:'Resolución',q:'¿Qué mide la resolución en el primer contacto?',o:['Casos solucionados sin contactos adicionales','Clientes nuevos por mes','Ventas por asesor','Correos enviados por día'],a:0,why:'La resolución en primer contacto refleja cuántos casos se solucionan en la primera interacción.'},
+    {cat:'SLA',q:'¿Qué es un SLA en atención al cliente?',o:['Un acuerdo sobre niveles de servicio y tiempos esperados','Un listado de productos','Una campaña de descuentos','Un tipo de cliente'],a:0,why:'Un SLA define compromisos medibles de servicio, como tiempos de respuesta o resolución.'},
+    {cat:'Escalamiento',q:'Un reclamo supera la autoridad del asesor. ¿Qué debe hacer?',o:['Prometer una solución no autorizada','Escalarlo al área responsable y documentar el caso','Eliminar la conversación','Pedir al cliente que no vuelva'],a:1,why:'El escalamiento lleva el caso al nivel con autoridad y conocimientos para resolverlo.'},
+    {cat:'Priorización',q:'Dos casos están pendientes: uno implica una interrupción general y otro una consulta informativa. ¿Cuál priorizar?',o:['La consulta informativa','La interrupción general por su impacto','El caso con menos texto','El que llegó último'],a:1,why:'La prioridad considera impacto y urgencia, no solo el orden o extensión del mensaje.'},
+    {cat:'Conocimiento del cliente',q:'¿Qué representa una vista 360 del cliente?',o:['Una visión integrada de datos e interacciones relevantes','Una fotografía obligatoria','Solo la última factura','La lista de empleados'],a:0,why:'La vista 360 reúne información relevante del cliente desde diferentes puntos de contacto.'},
+    {cat:'Valor del cliente',q:'¿Qué ayuda a estimar el valor de vida del cliente (CLV)?',o:['El valor económico esperado de la relación durante el tiempo','La edad exacta del cliente','El número de llamadas del gerente','El tamaño de la base de datos'],a:0,why:'CLV estima el valor que puede generar la relación con el cliente a lo largo del tiempo.'},
+    {cat:'Correlación',q:'Dos indicadores aumentan al mismo tiempo. ¿Qué se puede concluir?',o:['Que uno necesariamente causa al otro','Que existe una asociación observada, pero no prueba causalidad','Que los datos son falsos','Que no se necesita más análisis'],a:1,why:'La correlación por sí sola no demuestra una relación causal.'},
+    {cat:'RFM',q:'En el análisis RFM, ¿qué significan las letras?',o:['Recencia, frecuencia y valor monetario','Riesgo, formato y mercado','Registro, factura y mensaje','Respuesta, fecha y método'],a:0,why:'RFM segmenta según cuándo compró, con qué frecuencia y cuánto gastó el cliente.'},
+    {cat:'ROI',q:'Una campaña cuesta $1.000.000 y genera un beneficio neto de $300.000. ¿Cuál es el ROI sobre la inversión?',o:['3%','30%','70%','130%'],a:1,why:'ROI = beneficio neto dividido entre inversión: 300.000 / 1.000.000 = 30%.'},
+    {cat:'Objetivos SMART',q:'¿Cuál de estas metas es más medible?',o:['Mejorar el servicio pronto','Aumentar la satisfacción','Elevar CSAT de 82% a 88% antes de finalizar el trimestre','Atender mejor a todos'],a:2,why:'La meta especifica indicador, valor inicial, objetivo y plazo.'},
+    {cat:'Captación',q:'¿Qué indicador ayuda a evaluar el costo de adquirir un cliente?',o:['CAC','NPS','SLA','CSAT'],a:0,why:'CAC representa el costo de adquisición de clientes.'},
+    {cat:'CSAT',q:'¿Qué mide normalmente CSAT?',o:['Satisfacción del cliente con una experiencia o interacción','Costo de adquisición','Duración de una oportunidad','Cantidad de prospectos'],a:0,why:'CSAT mide la satisfacción declarada respecto a un producto, servicio o interacción.'},
+    {cat:'Satisfacción y lealtad',q:'¿Un cliente satisfecho necesariamente será leal?',o:['Sí, siempre','No; la satisfacción ayuda, pero también influyen precio, alternativas y contexto','Solo si compra diariamente','La satisfacción no tiene ninguna relación'],a:1,why:'La satisfacción influye en la relación, pero no garantiza por sí sola la lealtad.'},
+    {cat:'Seguridad de cuenta',q:'¿Qué práctica mejora la seguridad de acceso al CRM?',o:['Autenticación multifactor y contraseñas individuales','Compartir una clave entre todo el equipo','Desactivar el cierre de sesión','Usar la misma contraseña en todos los servicios'],a:0,why:'La autenticación multifactor y las cuentas individuales reducen el riesgo de acceso indebido.'},
+    {cat:'Datos sensibles',q:'Un archivo contiene información personal que no es necesaria para el análisis. ¿Qué conviene hacer?',o:['Excluirla o anonimizarla antes de procesar','Publicarla en el dashboard','Copiarla a todos los equipos','Mantenerla por curiosidad'],a:0,why:'La minimización de datos reduce la exposición de información que no se necesita.'}
+  ];
+
+  // State
+  let state = {
+    active: false,
+    studentName: "",
+    role: null,
+    scenario: null,
+    simChoices: {},
+    simVerified: false,
+    questions: [],
+    qIndex: 0,
+    score: 0,
+    qLocked: false,
+    selectedMulti: [],
+    customers: []
+  };
+
+  function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function shuffle(arr) {
+    return [...arr].sort(() => Math.random() - 0.5);
+  }
+
+  function startSimulation() {
+    const nameInput = document.getElementById("student-name").value.trim();
+    if (nameInput.length < 3) {
+      alert("Por favor, ingresa tu nombre completo para iniciar.");
+      return;
+    }
+
+    state.studentName = nameInput;
+    state.role = ROLES[Math.floor(Math.random() * ROLES.length)];
+    state.scenario = SCENARIOS[Math.floor(Math.random() * SCENARIOS.length)];
+    state.simChoices = {};
+    state.simVerified = false;
+    state.qIndex = 0;
+    state.score = 0;
+    state.qLocked = false;
+    state.active = true;
+
+    // Construir 6 preguntas: 4 aleatorias del banco CRM + 2 dinámicas especiales del escenario
+    const randomBankQs = shuffle(BANK_100).slice(0, 4).map(item => ({
+      type: `Banco CRM · ${item.cat}`,
+      kind: "single",
+      prompt: item.q,
+      options: item.o,
+      answer: item.a,
+      rationale: item.why
+    }));
+
+    state.questions = [
+      randomBankQs[0],
+      randomBankQs[1],
+      state.scenario.specialQuestions[0],
+      randomBankQs[2],
+      state.scenario.specialQuestions[1],
+      randomBankQs[3]
+    ];
+
+    // HUD
+    document.getElementById("hud-role").style.display = "inline-block";
+    document.getElementById("hud-score").style.display = "inline-block";
+    document.getElementById("hud-role").textContent = state.role.name;
+    updateScoreHUD();
+
+    // Contexto
+    document.getElementById("ctx-scenario-title").textContent = state.scenario.title;
+    document.getElementById("ctx-scenario-desc").textContent = state.scenario.desc;
+    document.getElementById("ctx-role-name").textContent = state.role.name;
+    document.getElementById("ctx-role-mission").textContent = state.role.mission;
+    document.getElementById("ctx-client-need").textContent = state.scenario.need;
+
+    buildSimItems();
+    if (state.customers.length === 0) generateSampleCustomers(25);
+    goToScreen("screen-context");
+  }
+
+  function goToScreen(id) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+  }
+
+  function updateScoreHUD() {
+    document.getElementById("hud-score").textContent = `${state.score} / 6 pts`;
+  }
+
+  // Laboratorio CRM (Simulador práctico)
+  function buildSimItems() {
+    const container = document.getElementById("sim-items-container");
+    container.innerHTML = "";
+    state.scenario.simItems.forEach((item, idx) => {
+      const div = document.createElement("div");
+      div.className = "req-item";
+      div.innerHTML = `
+        <div class="req-text"><strong>#${idx + 1}:</strong> ${item.text}</div>
+        <div class="req-controls">
+          <button class="pill-btn" id="btn-${item.id}-ok" onclick="selectSim('${item.id}', true)">✓ Aprobar</button>
+          <button class="pill-btn" id="btn-${item.id}-fix" onclick="selectSim('${item.id}', false)">✗ Corregir</button>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+    document.getElementById("sim-feedback").className = "feedback-banner";
+    document.getElementById("btn-next-trivia").disabled = true;
+    document.getElementById("btn-verify-sim").disabled = false;
+  }
+
+  function selectSim(id, isOk) {
+    if (state.simVerified) return;
+    state.simChoices[id] = isOk;
+    document.getElementById(`btn-${id}-ok`).className = "pill-btn" + (isOk ? " selected-ok" : "");
+    document.getElementById(`btn-${id}-fix`).className = "pill-btn" + (!isOk ? " selected-fix" : "");
+  }
+
+  function verifySimulation() {
+    const items = state.scenario.simItems;
+    if (Object.keys(state.simChoices).length < items.length) {
+      alert("Evalúa los 3 casos operativos antes de verificar.");
+      return;
+    }
+
+    state.simVerified = true;
+    let hits = 0;
+    let notes = [];
+
+    items.forEach((item, i) => {
+      if (state.simChoices[item.id] === item.valid) {
+        hits++;
+      } else {
+        notes.push(`<strong>Caso #${i + 1}:</strong> ${item.reason}`);
+      }
+    });
+
+    const fb = document.getElementById("sim-feedback");
+    if (hits === items.length) {
+      fb.className = "feedback-banner ok show";
+      fb.innerHTML = `<strong>¡Auditoría perfecta (3/3)!</strong> Identificaste correctamente las prácticas válidas y los riesgos operativos.`;
+    } else {
+      fb.className = "feedback-banner err show";
+      fb.innerHTML = `<strong>Resultado (${hits}/3 aciertos):</strong> ${notes.join(" | ")}`;
+    }
+
+    document.getElementById("btn-verify-sim").disabled = true;
+    document.getElementById("btn-next-trivia").disabled = false;
+  }
+
+  // Generador e Importador de Clientes
+  function generateSampleCustomers(n) {
+    state.customers = Array.from({ length: n }, (_, i) => ({
+      id: `CLI-${String(i + 1).padStart(3, '0')}`,
+      age: 20 + Math.floor(Math.random() * 48),
+      purchases: 1 + Math.floor(Math.random() * 18),
+      satisfaction: ['Alta', 'Media', 'Baja'][Math.floor(Math.random() * 3)]
+    }));
+    document.getElementById("import-status").textContent = `Muestra aleatoria generada (${n} clientes ficticios).`;
+    renderCustomersTable();
+  }
+
+  function renderCustomersTable() {
+    const list = state.customers;
+    document.getElementById("client-count-lbl").textContent = list.length;
+    const alta = list.filter(c => c.satisfaction === 'Alta').length;
+    const baja = list.filter(c => c.satisfaction === 'Baja').length;
+    const avgCompras = list.length ? (list.reduce((s, c) => s + c.purchases, 0) / list.length).toFixed(1) : 0;
+
+    document.getElementById("data-summary-pills").innerHTML = `
+      <span class="badge" style="background:var(--accent-light); color:#065f46;">Alta: ${alta}</span>
+      <span class="badge" style="background:var(--danger-light); color:#991b1b;">Baja: ${baja}</span>
+      <span class="badge" style="background:var(--primary-light); color:var(--primary);">Prom. Compras: ${avgCompras}</span>
+    `;
+
+    document.getElementById("data-rows").innerHTML = list.slice(0, 15).map(c => `
+      <tr>
+        <td>${esc(c.id)}</td>
+        <td>${c.age}</td>
+        <td>${c.purchases}</td>
+        <td><strong>${esc(c.satisfaction)}</strong></td>
+      </tr>
+    `).join('');
+  }
+
+  async function handleFileImport(e) {
+    const f = e.target.files[0];
+    if (!f) return;
+    const status = document.getElementById("import-status");
+    try {
+      let rows = [];
+      if (/\.csv$|\.txt$/i.test(f.name)) {
+        const txt = await f.text();
+        const lines = txt.trim().split(/\r?\n/);
+        const sep = lines[0].includes(';') ? ';' : ',';
+        const h = lines.shift().split(sep).map(x => x.trim().replace(/^"|"$/g, ''));
+        rows = lines.map(l => {
+          const v = l.split(sep).map(x => x.trim().replace(/^"|"$/g, ''));
+          return Object.fromEntries(h.map((k, i) => [k, v[i] ?? '']));
+        });
+      } else if (/\.xlsx?$/i.test(f.name)) {
+        if (!window.XLSX) throw Error("Lector Excel no disponible sin internet.");
+        const data = await f.arrayBuffer();
+        const wb = XLSX.read(data, { type: 'array' });
+        rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+      }
+      if (!rows.length) throw Error("Archivo vacío.");
+      const keys = Object.keys(rows[0]);
+      const find = (r, terms) => {
+        const k = keys.find(x => terms.some(t => x.toLowerCase().replace(/[ _]/g, '').includes(t)));
+        return k ? r[k] : '';
+      };
+      const parsed = rows.map((r, i) => ({
+        id: find(r, ['id', 'codigo']) || `IMP-${i + 1}`,
+        age: Number(find(r, ['edad', 'age'])) || 30,
+        purchases: Number(find(r, ['compras', 'purchase', 'ventas'])) || 0,
+        satisfaction: String(find(r, ['satisfaccion', 'satisfaction', 'nivel'])) || 'Media'
+      }));
+      state.customers = parsed;
+      status.textContent = `Archivo "${f.name}" importado: ${parsed.length} registros.`;
+      renderCustomersTable();
+    } catch (err) {
+      status.textContent = `Error al importar: ${err.message}`;
+    }
+  }
+
+  // Evaluación Gamificada (6 Retos)
+  function startTrivia() {
+    state.qIndex = 0;
+    renderQuestion();
+    goToScreen("screen-trivia");
+  }
+
+  function renderQuestion() {
+    const q = state.questions[state.qIndex];
+    state.qLocked = false;
+    state.selectedMulti = [];
+
+    document.getElementById("q-header").textContent = `Reto ${state.qIndex + 1} de ${state.questions.length}`;
+    document.getElementById("q-type-badge").textContent = q.type;
+    document.getElementById("q-prompt").textContent = q.prompt;
+
+    const fb = document.getElementById("q-feedback");
+    fb.className = "feedback-banner";
+    fb.innerHTML = "";
+
+    document.getElementById("btn-submit-q").style.display = "inline-flex";
+    document.getElementById("btn-next-q").style.display = "none";
+
+    const body = document.getElementById("q-body");
+    body.innerHTML = "";
+
+    if (q.kind === "single") {
+      const list = document.createElement("div");
+      list.className = "options-list";
+      q.options.forEach((opt, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "option-btn";
+        btn.dataset.idx = idx;
+        btn.innerHTML = `<span><strong>${String.fromCharCode(65 + idx)}.</strong></span> <span>${opt}</span>`;
+        btn.onclick = () => {
+          if (state.qLocked) return;
+          list.querySelectorAll(".option-btn").forEach(b => b.classList.remove("selected"));
+          btn.classList.add("selected");
+        };
+        list.appendChild(btn);
+      });
+      body.appendChild(list);
+    } else if (q.kind === "multi") {
+      const list = document.createElement("div");
+      list.className = "options-list";
+      q.options.forEach((opt, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "option-btn";
+        btn.dataset.idx = idx;
+        btn.innerHTML = `<span>☐</span> <span>${opt}</span>`;
+        btn.onclick = () => {
+          if (state.qLocked) return;
+          if (state.selectedMulti.includes(idx)) {
+            state.selectedMulti = state.selectedMulti.filter(i => i !== idx);
+            btn.classList.remove("selected");
+            btn.querySelector("span").textContent = "☐";
+          } else {
+            state.selectedMulti.push(idx);
+            btn.classList.add("selected");
+            btn.querySelector("span").textContent = "☑";
+          }
+        };
+        list.appendChild(btn);
+      });
+      body.appendChild(list);
+    } else if (q.kind === "match") {
+      const wrap = document.createElement("div");
+      q.pairs.forEach((pair, idx) => {
+        const row = document.createElement("div");
+        row.className = "match-row";
+        const optsHtml = q.choices.map(c => `<option value="${c}">${c}</option>`).join("");
+        row.innerHTML = `
+          <div class="box" style="padding:7px 10px;">${pair.left}</div>
+          <select id="match-sel-${idx}">
+            <option value="">-- Selecciona concepto --</option>
+            ${optsHtml}
+          </select>
+        `;
+        wrap.appendChild(row);
+      });
+      body.appendChild(wrap);
+    }
+  }
+
+  function submitAnswer() {
+    if (state.qLocked) return;
+    const q = state.questions[state.qIndex];
+    let isCorrect = false;
+
+    if (q.kind === "single") {
+      const sel = document.querySelector("#q-body .option-btn.selected");
+      if (!sel) {
+        alert("Selecciona una opción antes de validar.");
+        return;
+      }
+      const chosen = parseInt(sel.dataset.idx, 10);
+      isCorrect = (chosen === q.answer);
+
+      document.querySelectorAll("#q-body .option-btn").forEach((btn, idx) => {
+        btn.disabled = true;
+        if (idx === q.answer) btn.classList.add("correct");
+        else if (idx === chosen && !isCorrect) btn.classList.add("wrong");
+      });
+    } else if (q.kind === "multi") {
+      if (state.selectedMulti.length === 0) {
+        alert("Selecciona al menos una opción.");
+        return;
+      }
+      const sortedUser = [...state.selectedMulti].sort().join(",");
+      const sortedAns = [...q.answer].sort().join(",");
+      isCorrect = (sortedUser === sortedAns);
+
+      document.querySelectorAll("#q-body .option-btn").forEach((btn, idx) => {
+        btn.disabled = true;
+        if (q.answer.includes(idx)) btn.classList.add("correct");
+        else if (state.selectedMulti.includes(idx)) btn.classList.add("wrong");
+      });
+    } else if (q.kind === "match") {
+      let allFilled = true;
+      let allMatch = true;
+      q.pairs.forEach((pair, idx) => {
+        const sel = document.getElementById(`match-sel-${idx}`);
+        if (!sel.value) allFilled = false;
+        if (sel.value !== pair.right) allMatch = false;
+      });
+      if (!allFilled) {
+        alert("Completa todas las asociaciones antes de validar.");
+        return;
+      }
+      isCorrect = allMatch;
+      q.pairs.forEach((pair, idx) => {
+        const sel = document.getElementById(`match-sel-${idx}`);
+        sel.disabled = true;
+        sel.style.borderColor = (sel.value === pair.right) ? "var(--accent)" : "var(--danger)";
+        sel.style.background = (sel.value === pair.right) ? "var(--accent-light)" : "var(--danger-light)";
+      });
+    }
+
+    state.qLocked = true;
+    if (isCorrect) {
+      state.score++;
+      updateScoreHUD();
+    }
+
+    const fb = document.getElementById("q-feedback");
+    fb.className = `feedback-banner show ${isCorrect ? "ok" : "err"}`;
+    fb.innerHTML = `<strong>${isCorrect ? "¡Correcto! (+1 punto)" : "Respuesta incorrecta."}</strong> ${q.rationale}`;
+
+    document.getElementById("btn-submit-q").style.display = "none";
+    const nextBtn = document.getElementById("btn-next-q");
+    nextBtn.style.display = "inline-flex";
+    nextBtn.textContent = (state.qIndex < state.questions.length - 1) ? "Siguiente Reto →" : "Ver Acta y Diagnóstico →";
+  }
+
+  function nextQuestion() {
+    if (state.qIndex < state.questions.length - 1) {
+      state.qIndex++;
+      renderQuestion();
+    } else {
+      finishSimulation();
+    }
+  }
+
+  function finishSimulation() {
+    state.active = false;
+    const total = state.questions.length;
+    const pct = Math.round((state.score / total) * 100);
+
+    let level = "";
+    let title = "";
+    let desc = "";
+
+    if (pct >= 85) {
+      level = "Gerente de CRM";
+      title = "Estratega Omnicanal y Analítico (Dominio Experto)";
+      desc = "Dominas la toma de decisiones basada en indicadores (CLV, Churn, NPS), la gobernabilidad del dato y la resolución proactiva de fricciones con el cliente.";
+    } else if (pct >= 70) {
+      level = "Supervisor de CRM";
+      title = "Coordinador de Experiencia y Calidad (Nivel Competente)";
+      desc = "Aplicas correctamente la priorización de casos, el seguimiento comercial y la supervisión operativa, con oportunidad de profundizar en analítica predictiva.";
+    } else if (pct >= 50) {
+      level = "Profesional de CRM";
+      title = "Analista Operativo en Consolidación (Nivel Intermedio)";
+      desc = "Comprendes el flujo de atención y registro de clientes, pero debes reforzar la interpretación de KPIs y controles de privacidad de datos.";
+    } else {
+      level = "Auxiliar de CRM";
+      title = "Explorador de Gestión de Clientes (Nivel Inicial)";
+      desc = "Es recomendable repasar los fundamentos del ciclo de vida del cliente, la depuración de duplicados y los acuerdos de nivel de servicio (SLA).";
+    }
+
+    saveLeaderboard({
+      name: state.studentName,
+      role: state.role.name,
+      score: pct,
+      level,
+      date: new Date().toISOString()
+    });
+
+    document.getElementById("end-name").textContent = state.studentName;
+    document.getElementById("end-role").textContent = state.role.name;
+    document.getElementById("end-scenario").textContent = state.scenario.title;
+    document.getElementById("end-clients").textContent = state.customers.length;
+    document.getElementById("end-score").textContent = `${state.score} / ${total}`;
+    document.getElementById("end-percent").textContent = `${pct}% de efectividad · ${level}`;
+    document.getElementById("end-profile-title").textContent = title;
+    document.getElementById("end-profile-desc").textContent = desc;
+
+    goToScreen("screen-end");
+  }
+
+  // Leaderboard (localStorage)
+  function getLeaderboard() {
+    try { return JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || '[]'); }
+    catch { return []; }
+  }
+
+  function saveLeaderboard(entry) {
+    const list = getLeaderboard();
+    list.push(entry);
+    list.sort((a, b) => b.score - a.score || new Date(a.date) - new Date(b.date));
+    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(list));
+  }
+
+  function toggleRanking(show) {
+    const modal = document.getElementById("ranking-modal");
+    if (show) {
+      const list = getLeaderboard();
+      document.getElementById("leaderboard-rows").innerHTML = list.length
+        ? list.map((r, i) => `
+            <tr>
+              <td><strong>#${i + 1}</strong></td>
+              <td>${esc(r.name)}</td>
+              <td>${esc(r.role)}</td>
+              <td><strong>${r.score}%</strong></td>
+              <td>${esc(r.level)}</td>
+              <td>${new Date(r.date).toLocaleDateString('es-CO')}</td>
+            </tr>`).join('')
+        : '<tr><td colspan="6" style="text-align:center; padding:18px; color:var(--muted);">Aún no hay participantes registrados en este navegador.</td></tr>';
+      modal.classList.add("active");
+    } else {
+      modal.classList.remove("active");
+    }
+  }
+
+  // Anti-cheat
+  function triggerAntiCheat() {
+    if (!state.active) return;
+    state.active = false;
+    document.getElementById("cheat-overlay").classList.add("active");
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) triggerAntiCheat();
+  });
+
+  window.addEventListener("blur", () => {
+    triggerAntiCheat();
+  });
+
+  function resetAll() {
+    state.active = false;
+    document.getElementById("cheat-overlay").classList.remove("active");
+    document.getElementById("hud-role").style.display = "none";
+    document.getElementById("hud-score").style.display = "none";
+    document.getElementById("student-name").value = "";
+    goToScreen("screen-start");
+  }
+</script>
+</body>
+</html>
